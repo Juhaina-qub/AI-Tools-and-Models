@@ -7,21 +7,28 @@ on:
 
 jobs:
   slack-notification:
-    runs-on: macos-latest  # Platform for running the workflow
+    runs-on: ubuntu-latest  # Changed to ensure compatibility with jq
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Debug GitHub Event
+        run: |
+          echo "Full GitHub event data:"
+          echo "${{ toJSON(github.event) }}"  # Prints the full event payload for debugging.
 
       - name: Prepare Slack Message
         id: prepare_message
         run: |
           echo "Generating Slack message..."
           UPDATED_PAGES=""
-          for page in $(jq -c '.pages[]' <<< "${{ toJSON(github.event) }}"); do
-            PAGE_URL=$(jq -r '.html_url' <<< "$page")
-            PAGE_TITLE=$(jq -r '.title' <<< "$page")
+          # Loop through each page in the GitHub event pages array
+          echo "${{ toJSON(github.event.pages) }}" | jq -c '.[]' | while read -r page; do
+            PAGE_URL=$(echo "$page" | jq -r '.html_url')
+            PAGE_TITLE=$(echo "$page" | jq -r '.title')
             UPDATED_PAGES="${UPDATED_PAGES}\n- [${PAGE_TITLE}](${PAGE_URL})"
           done
+          echo "Constructed message: $UPDATED_PAGES"
           echo "UPDATED_PAGES=${UPDATED_PAGES}" >> $GITHUB_ENV
 
       - name: Send Slack Notification

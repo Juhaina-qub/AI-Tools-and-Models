@@ -1,47 +1,56 @@
 name: Wiki Update Notification
-
 on:
   gollum:
     branches:
       - main
-
 jobs:
   slack-notification:
-    runs-on: ubuntu-latest  # Changed to ensure compatibility with jq
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Debug GitHub Event
-        run: |
-          echo "Full GitHub event data:"
-          echo "${{ toJSON(github.event) }}"  # Prints the full event payload for debugging.
-
+      
       - name: Prepare Slack Message
         id: prepare_message
         run: |
           echo "Generating Slack message..."
-          UPDATED_PAGES=""
-          # Loop through each page in the GitHub event pages array
-          echo "${{ toJSON(github.event.pages) }}" | jq -c '.[]' | while read -r page; do
-            PAGE_URL=$(echo "$page" | jq -r '.html_url')
-            PAGE_TITLE=$(echo "$page" | jq -r '.title')
-            UPDATED_PAGES="${UPDATED_PAGES}\n- [${PAGE_TITLE}](${PAGE_URL})"
-          done
-          echo "Constructed message: $UPDATED_PAGES"
-          echo "UPDATED_PAGES=${UPDATED_PAGES}" >> $GITHUB_ENV
+          # Use jq to parse and format the pages
+          UPDATED_PAGES=$(echo '${{ toJSON(github.event.pages) }}' | jq -r '.[] | "• *\(.title)*\n  Action: \(.action)\n  Page URL: \(.html_url)"')
+          
+          # Replace newlines with literal '\n' for JSON
+          UPDATED_PAGES=$(echo "$UPDATED_PAGES" | sed $'s/\n/\\\\n/g')
+          
+          echo "UPDATED_PAGES=${UPDATED_PAGES}" >> $GITHUB_OUTPUT
 
       - name: Send Slack Notification
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
             {
-              "text": "📝 The following Wiki pages were updated:",
-              "attachments": [
+              "text": "📝 Wiki Pages Updated",
+              "blocks": [
                 {
-                  "title": "Updated Pages",
-                  "text": "${{ env.UPDATED_PAGES }}",
-                  "color": "#36a64f"
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*The following Wiki pages were updated:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.prepare_message.outputs.UPDATED_PAGES }}"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "📍 Repository: ${{ github.repository }}"
+                    }
+                  ]
                 }
               ]
             }

@@ -7,10 +7,19 @@ on:
 
 jobs:
   slack-notification:
-    runs-on: macos-latest  # Platform for running the workflow
+    runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Extract Updated Wiki Pages
+        id: extract-pages
+        run: |
+          echo "Updated Pages:" > updated_pages.txt
+          for page in $(jq -r '.pages[] | "\(.html_url)"' <<< "${{ toJson(github.event) }}"); do
+            echo "$page" >> updated_pages.txt
+          done
+          echo "Updated pages extracted."
 
       - name: Send Slack Notification
         uses: slackapi/slack-github-action@v1.24.0
@@ -21,10 +30,11 @@ jobs:
               "attachments": [
                 {
                   "title": "Updated Pages",
-                  "text": "${{ github.event.pages | map('html_url') | join('\n') }}",
+                  "text": "$(cat updated_pages.txt)",
                   "color": "#36a64f"
                 }
               ]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+

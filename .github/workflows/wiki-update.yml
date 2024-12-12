@@ -7,8 +7,11 @@ on:
 
 jobs:
   slack-notification:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
       - name: Gather Wiki Page Info
         id: wiki-info
         env:

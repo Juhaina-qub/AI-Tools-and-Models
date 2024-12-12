@@ -7,17 +7,51 @@ on:
 
 jobs:
   slack-notification:
-    runs-on: macos-latest  # Changed from ubuntu-latest
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Gather Wiki Page Info
+        id: wiki-info
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: |
+          echo "REPOSITORY=${{ github.repository }}" >> $GITHUB_OUTPUT
+          echo "WIKI_URL=${{ github.server_url }}/${{ github.repository }}/wiki" >> $GITHUB_OUTPUT
 
       - name: Send Slack Notification
         uses: slackapi/slack-github-action@v1.24.0
         with:
           payload: |
             {
-              "text": "📝 Wiki Page Updated"
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "📝 *Wiki Page Updated*\n\n*Repository:* ${{ github.repository }}\n*Wiki URL:* ${{ steps.wiki-info.outputs.WIKI_URL }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✨ *Changes Detected:*\n• Page modifications tracked\n• Click the wiki link above to view specific updates"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Wiki",
+                        "emoji": true
+                      },
+                      "url": "${{ steps.wiki-info.outputs.WIKI_URL }}"
+                    }
+                  ]
+                }
+              ]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

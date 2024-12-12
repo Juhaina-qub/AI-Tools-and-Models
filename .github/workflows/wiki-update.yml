@@ -7,7 +7,7 @@ on:
 
 jobs:
   slack-notification:
-    runs-on: macos-latest  # Platform for running the workflow
+    runs-on: macos-latest  # Changed from ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -17,14 +17,7 @@ jobs:
         with:
           payload: |
             {
-              "text": "📝 A Wiki page was updated!",
-              "attachments": [
-                {
-                  "title": "Updated Wiki Pages",
-                  "text": "${{ github.event.pages[*].html_url | join('\n') }}",
-                  "color": "#36a64f"
-                }
-              ]
+              "text": "📝 A Wiki page was updated! Check it out here: https://github.com/Juhaina-qub/AI-Tools-and-Models/wiki"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

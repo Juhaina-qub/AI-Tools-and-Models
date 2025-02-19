@@ -14,7 +14,7 @@ jobs:
         with:
           payload: |
             {
-              "text": ":memo: Wiki Page Updated: <${{ github.event.pages[0].html_url }}|Click here to view>"
+              "text": ":memo: Wiki Page Updated: *${{ github.event.pages[0].title }}*\n<${{ github.event.pages[0].html_url }}|Click here to view>"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
